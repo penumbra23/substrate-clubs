@@ -1,8 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-/// Edit this file to define custom logic or remove it if it is not needed.
-/// Learn more about FRAME and the core library of Substrate FRAME pallets:
-/// <https://docs.substrate.io/reference/frame-pallets/>
 pub use pallet::*;
 
 #[cfg(test)]
@@ -18,6 +15,7 @@ mod benchmarking;
 pub mod pallet {
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
+	use frame_support::BoundedBTreeSet;
 	use sp_std::vec::Vec;
 
 	#[pallet::pallet]
@@ -28,6 +26,8 @@ pub mod pallet {
 	pub trait Config: frame_system::Config {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		
+		type AdminAccount: EnsureOrigin<Self::Origin>;
+
 		#[pallet::constant]
 		type MinLength: Get<u32>;
 
@@ -41,12 +41,12 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn members)]
-	pub type Members<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, BoundedVec<u32, T::MaxLength>, ValueQuery>;
+	pub type Members<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, BoundedBTreeSet<u32, T::MaxLength>, ValueQuery>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		ClubAdded(u32, T::AccountId),
+		ClubAdded(u32),
 		MemberAdded(u32, T::AccountId),
 		MemberRemoved(u32, T::AccountId),
 	}
@@ -55,35 +55,67 @@ pub mod pallet {
 	#[pallet::error]
 	pub enum Error<T> {
 		ClubAlreadyExists,
+		ClubNotFound,
 		ClubNameTooLong,
+		AlreadyMember,
+		TooManyClubs,
 	}
 
-	// Dispatchable functions allows users to interact with the pallet and invoke state changes.
-	// These functions materialize as "extrinsics", which are often compared to transactions.
-	// Dispatchable functions must be annotated with a weight and must return a DispatchResult.
+	/// Returns true if the id of the club is present inside the list.
+	fn check_if_member<T: Config>(id: u32, clubs: &BoundedBTreeSet<u32, T::MaxLength>) -> bool {
+		for club_id in clubs {
+			if id == *club_id {
+				return true;
+			}
+		}
+		false
+	}
+
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		/// An example dispatchable that takes a singles value as a parameter, writes the value to
-		/// storage and emits an event. This function must be dispatched by a signed extrinsic.
 		#[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
 		pub fn add_club(origin: OriginFor<T>, id: u32, name: Vec<u8>) -> DispatchResult {
+			T::AdminAccount::ensure_origin(origin)?;
+
 			ensure!(Clubs::<T>::try_get(id).is_err(), Error::<T>::ClubAlreadyExists);
 
 			let club_name: BoundedVec<_, _> = name.try_into().map_err(|()| Error::<T>::ClubNameTooLong)?;
 
 			Clubs::<T>::insert(id, club_name);
+			Self::deposit_event(Event::<T>::ClubAdded(id));
 			Ok(())
 		}
 
 		/// An example dispatchable that may throw a custom error.
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
-		pub fn add_member(origin: OriginFor<T>, id: u32) -> DispatchResult {
-			let club = Clubs::<T>::get(id);
+		pub fn add_member(origin: OriginFor<T>, id: u32, member: T::AccountId) -> DispatchResult {
+			T::AdminAccount::ensure_origin(origin)?;
+
+			ensure!(Clubs::<T>::try_get(id).is_ok(), Error::<T>::ClubNotFound);
+
+			let mut member_clubs = Members::<T>::get(&member);
+
+			ensure!(!member_clubs.contains(&id), Error::<T>::AlreadyMember);
+			ensure!(member_clubs.try_insert(id).is_ok(), Error::<T>::TooManyClubs);
+
+			Members::<T>::insert(&member, member_clubs);
+			Self::deposit_event(Event::<T>::MemberAdded(id, member));
 			Ok(())
 		}
 
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
-		pub fn remove_member(origin: OriginFor<T>) -> DispatchResult {
+		pub fn remove_member(origin: OriginFor<T>, id: u32, member: T::AccountId) -> DispatchResult {
+			T::AdminAccount::ensure_origin(origin)?;
+
+			ensure!(Clubs::<T>::contains_key(id), Error::<T>::ClubNotFound);
+
+			let mut member_clubs = Members::<T>::get(&member);
+
+			ensure!(!check_if_member::<T>(id, &member_clubs), Error::<T>::AlreadyMember);
+			member_clubs.remove(&id);
+
+			Members::<T>::insert(&member, member_clubs);
+			Self::deposit_event(Event::<T>::MemberRemoved(id, member));
 			Ok(())
 		}
 	}

@@ -299,7 +299,7 @@ impl pallet_template::Config for Runtime {
 
 impl pallet_clubs::Config for Runtime {
 	type Event = Event;
-	
+	type AdminAccount = frame_system::EnsureRoot<AccountId>;
 	type MinLength = ConstU32<1>;
 	type MaxLength = ConstU32<32>;
 }
