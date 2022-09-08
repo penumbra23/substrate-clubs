@@ -61,61 +61,53 @@ pub mod pallet {
 		TooManyClubs,
 	}
 
-	/// Returns true if the id of the club is present inside the list.
-	fn check_if_member<T: Config>(id: u32, clubs: &BoundedBTreeSet<u32, T::MaxLength>) -> bool {
-		for club_id in clubs {
-			if id == *club_id {
-				return true;
-			}
-		}
-		false
-	}
-
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		#[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
-		pub fn add_club(origin: OriginFor<T>, id: u32, name: Vec<u8>) -> DispatchResult {
+		/// Adds a new club with the specified id and a name.
+		#[pallet::weight(100_000)]
+		pub fn add_club(origin: OriginFor<T>, club_id: u32, name: Vec<u8>) -> DispatchResult {
 			T::AdminAccount::ensure_origin(origin)?;
 
-			ensure!(Clubs::<T>::try_get(id).is_err(), Error::<T>::ClubAlreadyExists);
+			ensure!(Clubs::<T>::try_get(club_id).is_err(), Error::<T>::ClubAlreadyExists);
 
 			let club_name: BoundedVec<_, _> = name.try_into().map_err(|()| Error::<T>::ClubNameTooLong)?;
 
-			Clubs::<T>::insert(id, club_name);
-			Self::deposit_event(Event::<T>::ClubAdded(id));
+			Clubs::<T>::insert(club_id, club_name);
+			Self::deposit_event(Event::<T>::ClubAdded(club_id));
 			Ok(())
 		}
 
-		/// An example dispatchable that may throw a custom error.
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
-		pub fn add_member(origin: OriginFor<T>, id: u32, member: T::AccountId) -> DispatchResult {
+		/// Adds a member (account) to a club
+		#[pallet::weight(10_000)]
+		pub fn add_member(origin: OriginFor<T>, club_id: u32, member: T::AccountId) -> DispatchResult {
 			T::AdminAccount::ensure_origin(origin)?;
 
-			ensure!(Clubs::<T>::try_get(id).is_ok(), Error::<T>::ClubNotFound);
+			ensure!(Clubs::<T>::contains_key(club_id), Error::<T>::ClubNotFound);
 
 			let mut member_clubs = Members::<T>::get(&member);
 
-			ensure!(!member_clubs.contains(&id), Error::<T>::AlreadyMember);
-			ensure!(member_clubs.try_insert(id).is_ok(), Error::<T>::TooManyClubs);
+			ensure!(!member_clubs.contains(&club_id), Error::<T>::AlreadyMember);
+			ensure!(member_clubs.try_insert(club_id).is_ok(), Error::<T>::TooManyClubs);
 
 			Members::<T>::insert(&member, member_clubs);
-			Self::deposit_event(Event::<T>::MemberAdded(id, member));
+			Self::deposit_event(Event::<T>::MemberAdded(club_id, member));
 			Ok(())
 		}
 
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
-		pub fn remove_member(origin: OriginFor<T>, id: u32, member: T::AccountId) -> DispatchResult {
+		/// Removes the member from the club
+		#[pallet::weight(10_000)]
+		pub fn remove_member(origin: OriginFor<T>, club_id: u32, member: T::AccountId) -> DispatchResult {
 			T::AdminAccount::ensure_origin(origin)?;
 
-			ensure!(Clubs::<T>::contains_key(id), Error::<T>::ClubNotFound);
+			ensure!(Clubs::<T>::contains_key(club_id), Error::<T>::ClubNotFound);
 
 			let mut member_clubs = Members::<T>::get(&member);
 
-			ensure!(!check_if_member::<T>(id, &member_clubs), Error::<T>::AlreadyMember);
-			member_clubs.remove(&id);
+			ensure!(member_clubs.contains(&club_id), Error::<T>::AlreadyMember);
+			member_clubs.remove(&club_id);
 
 			Members::<T>::insert(&member, member_clubs);
-			Self::deposit_event(Event::<T>::MemberRemoved(id, member));
+			Self::deposit_event(Event::<T>::MemberRemoved(club_id, member));
 			Ok(())
 		}
 	}
