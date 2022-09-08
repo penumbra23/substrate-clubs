@@ -58,6 +58,7 @@ pub mod pallet {
 		ClubNotFound,
 		ClubNameTooLong,
 		AlreadyMember,
+		IsNotMember,
 		TooManyClubs,
 	}
 
@@ -103,7 +104,7 @@ pub mod pallet {
 
 			let mut member_clubs = Members::<T>::get(&member);
 
-			ensure!(member_clubs.contains(&club_id), Error::<T>::AlreadyMember);
+			ensure!(member_clubs.contains(&club_id), Error::<T>::IsNotMember);
 			member_clubs.remove(&club_id);
 
 			Members::<T>::insert(&member, member_clubs);
