@@ -1,12 +1,12 @@
 use crate as pallet_clubs;
-use frame_support::{traits::{ConstU16, ConstU64, ConstU32}, ord_parameter_types};
+use frame_support::traits::{ConstU16, ConstU64, ConstU32};
 use frame_system as system;
 use sp_core::H256;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
 };
-use system::EnsureSignedBy;
+use system::EnsureRoot;
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -49,13 +49,9 @@ impl system::Config for Test {
 	type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 
-ord_parameter_types! {
-	pub const One: u64 = 1;
-}
-
 impl pallet_clubs::Config for Test {
 	type Event = Event;
-	type AdminAccount = EnsureSignedBy<One, u64>;
+	type AdminAccount = EnsureRoot<u64>;
 	type MinLength = ConstU32<1>;
 	type MaxLength = ConstU32<32>;
 }

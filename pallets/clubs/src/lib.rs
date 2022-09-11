@@ -65,7 +65,7 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		/// Adds a new club with the specified id and a name.
-		#[pallet::weight(100_000)]
+		#[pallet::weight(100_000 + T::DbWeight::get().reads_writes(1,1))]
 		pub fn add_club(origin: OriginFor<T>, club_id: u32, name: Vec<u8>) -> DispatchResult {
 			T::AdminAccount::ensure_origin(origin)?;
 
@@ -79,7 +79,7 @@ pub mod pallet {
 		}
 
 		/// Adds a member (account) to a club
-		#[pallet::weight(10_000)]
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(2,1))]
 		pub fn add_member(origin: OriginFor<T>, club_id: u32, member: T::AccountId) -> DispatchResult {
 			T::AdminAccount::ensure_origin(origin)?;
 
@@ -96,7 +96,7 @@ pub mod pallet {
 		}
 
 		/// Removes the member from the club
-		#[pallet::weight(10_000)]
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(2,1))]
 		pub fn remove_member(origin: OriginFor<T>, club_id: u32, member: T::AccountId) -> DispatchResult {
 			T::AdminAccount::ensure_origin(origin)?;
 
