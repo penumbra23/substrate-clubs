@@ -27,10 +27,7 @@ pub mod pallet {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		
 		type AdminAccount: EnsureOrigin<Self::Origin>;
-
-		#[pallet::constant]
-		type MinLength: Get<u32>;
-
+		
 		#[pallet::constant]
 		type MaxLength: Get<u32>;
 	}

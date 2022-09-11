@@ -52,7 +52,6 @@ impl system::Config for Test {
 impl pallet_clubs::Config for Test {
 	type Event = Event;
 	type AdminAccount = EnsureRoot<u64>;
-	type MinLength = ConstU32<1>;
 	type MaxLength = ConstU32<32>;
 }
 
