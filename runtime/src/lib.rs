@@ -268,6 +268,7 @@ impl pallet_clubs::Config for Runtime {
 	type Event = Event;
 	type AdminAccount = frame_system::EnsureRoot<AccountId>;
 	type MaxLength = ConstU32<32>;
+	type WeightInfo = pallet_clubs::weights::SubstrateWeight<Runtime>;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.

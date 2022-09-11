@@ -1,6 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub use pallet::*;
 
 #[cfg(test)]
 mod mock;
@@ -11,8 +10,15 @@ mod tests;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
+pub mod weights;
+
+pub use weights::WeightInfo;
+
+pub use pallet::*;
+
 #[frame_support::pallet]
 pub mod pallet {
+	use super::*;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
 	use frame_support::BoundedBTreeSet;
@@ -28,6 +34,8 @@ pub mod pallet {
 		
 		type AdminAccount: EnsureOrigin<Self::Origin>;
 		
+		type WeightInfo: WeightInfo;
+
 		#[pallet::constant]
 		type MaxLength: Get<u32>;
 	}
@@ -62,7 +70,7 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		/// Adds a new club with the specified id and a name.
-		#[pallet::weight(100_000 + T::DbWeight::get().reads_writes(1,1))]
+		#[pallet::weight(T::WeightInfo::add_club(*club_id))]
 		pub fn add_club(origin: OriginFor<T>, club_id: u32, name: Vec<u8>) -> DispatchResult {
 			T::AdminAccount::ensure_origin(origin)?;
 
@@ -76,7 +84,7 @@ pub mod pallet {
 		}
 
 		/// Adds a member (account) to a club
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(2,1))]
+		#[pallet::weight(T::WeightInfo::add_member(*club_id))]
 		pub fn add_member(origin: OriginFor<T>, club_id: u32, member: T::AccountId) -> DispatchResult {
 			T::AdminAccount::ensure_origin(origin)?;
 
