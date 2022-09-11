@@ -93,6 +93,7 @@ runtime-benchmarks = [
 	"frame-support/runtime-benchmarks",
 	"frame-system-benchmarking",
 	"frame-system/runtime-benchmarks",
+	"pallet-clubs/runtime-benchmarks",
 	"hex-literal",
 	"pallet-balances/runtime-benchmarks",
 	"pallet-grandpa/runtime-benchmarks",
