@@ -43,9 +43,6 @@ use pallet_transaction_payment::CurrencyAdapter;
 pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{Perbill, Permill};
 
-/// Import the template pallet.
-pub use pallet_template;
-
 pub use pallet_clubs;
 
 /// An index to a block.
@@ -267,36 +264,6 @@ impl pallet_sudo::Config for Runtime {
 	type Call = Call;
 }
 
-impl pallet_nicks::Config for Runtime {
-	// The Balances pallet implements the ReservableCurrency trait.
-	// `Balances` is defined in `construct_runtime!` macro.
-	type Currency = Balances;
-	
-	// Set ReservationFee to a value.
-	type ReservationFee = ConstU128<100>;
-	
-	// No action is taken when deposits are forfeited.
-	type Slashed = ();
-	
-	// Configure the FRAME System Root origin as the Nick pallet admin.
-	// https://paritytech.github.io/substrate/master/frame_system/enum.RawOrigin.html#variant.Root
-	type ForceOrigin = frame_system::EnsureRoot<AccountId>;
-	
-	// Set MinLength of nick name to a desired value.
-	type MinLength = ConstU32<8>;
-	
-	// Set MaxLength of nick name to a desired value.
-	type MaxLength = ConstU32<32>;
-	
-	// The ubiquitous event type.
-	type Event = Event;
-}
-
-/// Configure the pallet-template in pallets/template.
-impl pallet_template::Config for Runtime {
-	type Event = Event;
-}
-
 impl pallet_clubs::Config for Runtime {
 	type Event = Event;
 	type AdminAccount = frame_system::EnsureRoot<AccountId>;
@@ -320,9 +287,6 @@ construct_runtime!(
 		Balances: pallet_balances,
 		TransactionPayment: pallet_transaction_payment,
 		Sudo: pallet_sudo,
-		// Include the custom logic from the pallet-template in the runtime.
-		TemplateModule: pallet_template,
-		Nicks: pallet_nicks,
 		Clubs: pallet_clubs,
 	}
 );
@@ -368,7 +332,6 @@ mod benches {
 		[frame_system, SystemBench::<Runtime>]
 		[pallet_balances, Balances]
 		[pallet_timestamp, Timestamp]
-		[pallet_template, TemplateModule]
 		[pallet_clubs, Clubs]
 	);
 }
