@@ -11,15 +11,18 @@ use system::EnsureRoot;
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 
+pub const CLUB_OWNER: u64 = 10;
+pub const MEMBER: u64 = 100;
+
 frame_support::construct_runtime!(
 	pub enum Test where
 		Block = Block,
 		NodeBlock = Block,
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
-		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-		Balances: pallet_balances::{Pallet, Call, Storage, Event<T>},
-		ClubsModule: pallet_clubs::{Pallet, Call, Storage, Event<T>},
+		System: frame_system,
+		Balances: pallet_balances,
+		ClubsModule: pallet_clubs,
 	}
 );
 
@@ -53,7 +56,7 @@ impl system::Config for Test {
 type Balance = u128;
 
 parameter_types! {
-    pub const ExistentialDeposit: u128 = 500;
+    pub const ExistentialDeposit: u128 = 100;
     pub const MaxLocks: u32 = 50;
 }
 
@@ -79,5 +82,11 @@ impl pallet_clubs::Config for Test {
 
 // Build genesis storage according to the mock runtime.
 pub fn basic_ledger() -> sp_io::TestExternalities {
-	system::GenesisConfig::default().build_storage::<Test>().unwrap().into()
+	let mut t = system::GenesisConfig::default().build_storage::<Test>().unwrap();
+	
+	pallet_balances::GenesisConfig::<Test> { balances: vec![(CLUB_OWNER, 1000), (MEMBER, 1000)] }
+			.assimilate_storage(&mut t)
+			.unwrap();
+		
+	t.into()
 }

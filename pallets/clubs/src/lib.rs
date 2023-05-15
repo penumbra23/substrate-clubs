@@ -91,7 +91,7 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		ClubAdded(u32),
 		MemberAdded(u32, T::AccountId),
-		MemberRemoved(u32, T::AccountId),
+		MembershipExtended(T::BlockNumber, T::AccountId),
 	}
 
 	// Errors inform users that something went wrong.
@@ -108,7 +108,7 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		/// Adds a new club with the specified id and a name.
+		/// Creates a new club with the specified id.
 		#[pallet::weight(T::WeightInfo::add_club(*club_id))]
 		pub fn add_club(origin: OriginFor<T>, club_id: u32, club: Club<T::AccountId, BalanceOf<T>>) -> DispatchResult {
 			T::AdminAccount::ensure_origin(origin)?;
@@ -131,20 +131,20 @@ pub mod pallet {
 			let club = Clubs::<T>::get(&club_id).unwrap();
 
 			ensure!(club.owner == caller, Error::<T>::NotOwner);
-			ensure!(!Memberships::<T>::contains_key(club_id, member), Error::<T>::AlreadyMember);
+			ensure!(!Memberships::<T>::contains_key(club_id, &member), Error::<T>::AlreadyMember);
 
 			let membership = Membership {
 				expiration: <frame_system::Pallet<T>>::block_number(),
 			};
 
-			Memberships::<T>::insert(club_id, caller.clone(), membership);
-			Self::deposit_event(Event::<T>::MemberAdded(club_id, caller));
+			Memberships::<T>::insert(club_id, &member, membership);
+			Self::deposit_event(Event::<T>::MemberAdded(club_id, member));
 			Ok(())
 		}
 
 		/// Extend the membership by paying the annual expense
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(2,1))]
-		pub fn extend_membership(origin: OriginFor<T>, club_id: u32, member: T::AccountId, duration: T::BlockNumber) -> DispatchResult {
+		pub fn extend_membership(origin: OriginFor<T>, club_id: u32, duration: T::BlockNumber) -> DispatchResult {
 			let caller = ensure_signed(origin)?;
 
 			ensure!(Clubs::<T>::contains_key(club_id), Error::<T>::ClubNotFound);
@@ -158,10 +158,15 @@ pub mod pallet {
 			let block_number_balance = T::BlockNumberToBalance::convert(duration);
 			let fee = club.annual_expense * block_number_balance;
 
-        	T::Currency::transfer(&member, &club.owner, fee, ExistenceRequirement::KeepAlive)?;
+			// Transfer the fee amount to the club owner
+        	T::Currency::transfer(&caller, &club.owner, fee, ExistenceRequirement::KeepAlive)?;
 
-			membership.expiration = duration;
-			Memberships::<T>::insert(club_id, caller, membership);
+			// Extend the membership for the duration paid
+			let membership_end = membership.expiration + duration;
+			membership.expiration = membership_end;
+
+			Memberships::<T>::insert(club_id, &caller, membership);
+			Self::deposit_event(Event::<T>::MembershipExtended(membership_end, caller));
 			Ok(())
 		}
 	}
