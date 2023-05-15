@@ -4,7 +4,7 @@ use frame_system as system;
 use sp_core::H256;
 use sp_runtime::{
 	testing::Header,
-	traits::{BlakeTwo256, IdentityLookup},
+	traits::{BlakeTwo256, IdentityLookup, ConstU32},
 };
 use system::EnsureRoot;
 
@@ -34,14 +34,14 @@ impl system::Config for Test {
 	type Origin = Origin;
 	type Call = Call;
 	type Index = u64;
-	type BlockNumber = u64;
+	type BlockNumber = u32;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
 	type AccountId = u64;
 	type Lookup = IdentityLookup<Self::AccountId>;
-	type Header = Header;
+	type Header = sp_runtime::generic::Header<u32, BlakeTwo256>;
 	type Event = Event;
-	type BlockHashCount = ConstU64<250>;
+	type BlockHashCount = ConstU32<250>;
 	type Version = ();
 	type PalletInfo = PalletInfo;
 	type AccountData = pallet_balances::AccountData<Balance>;
@@ -75,7 +75,7 @@ impl pallet_balances::Config for Test {
 impl pallet_clubs::Config for Test {
 	type Event = Event;
 	type AdminAccount = EnsureRoot<u64>;
-	type WeightInfo = ();
+	type WeightInfo = pallet_clubs::weights::SubstrateWeight<Test>;
 	type Currency = Balances;
 	type BlockNumberToBalance = sp_runtime::traits::ConvertInto;
 }

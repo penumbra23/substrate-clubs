@@ -17,7 +17,7 @@ type DepositBalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_syst
 benchmarks! {
 	where_clause { where
         BalanceOf<T>: Bounded + From<u128>,
-		T::BlockNumber: Bounded + From<u64>
+		T::BlockNumber: Bounded + From<u32>
     }
 
 	add_club {
@@ -51,7 +51,7 @@ benchmarks! {
 		assert_ok!(ClubsPallet::<T>::add_member(RawOrigin::Signed(owner.clone()).into(), club_id, member.clone()));
 
 		<T>::Currency::make_free_balance_be(&member, DepositBalanceOf::<T>::max_value());
-	}: _(RawOrigin::Signed(member.clone()), club_id, 1u64.into())
+	}: _(RawOrigin::Signed(member.clone()), club_id, 1u32.into())
 	verify {
 		assert_eq!(Memberships::<T>::contains_key(club_id, member), true);
 	}

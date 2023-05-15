@@ -143,7 +143,7 @@ pub mod pallet {
 		}
 
 		/// Extend the membership by paying the annual expense
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(2,1))]
+		#[pallet::weight(T::WeightInfo::extend_membership())]
 		pub fn extend_membership(origin: OriginFor<T>, club_id: u32, duration: T::BlockNumber) -> DispatchResult {
 			let caller = ensure_signed(origin)?;
 
