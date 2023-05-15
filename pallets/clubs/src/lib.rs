@@ -43,7 +43,7 @@ pub mod pallet {
 		type BlockNumberToBalance: Convert<Self::BlockNumber, BalanceOf<Self>>;
 	}
 
-	type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+	pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
 	#[derive(Encode, Decode, Default, Clone, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 	pub struct Club<AccountId, BalanceOf> {
