@@ -23,7 +23,7 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use frame_support::Blake2_128Concat;
 	use frame_support::traits::{Currency, ExistenceRequirement};
-	use sp_runtime::traits::Convert;
+	use sp_runtime::traits::{Convert, CheckedMul};
 	use sp_std::prelude::*;
 
 	#[pallet::pallet]
@@ -47,15 +47,17 @@ pub mod pallet {
 
 	#[derive(Encode, Decode, Default, Clone, Eq, PartialEq, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 	pub struct Club<AccountId, BalanceOf> {
+		/// Account of the club owner
 		pub(super) owner: AccountId,
-		pub(super) annual_expense: BalanceOf,
+		/// Membership fee for 1 block
+		pub(super) per_block_expense: BalanceOf,
 	}
 
 	impl<AccountId, BalanceOf> Club<AccountId, BalanceOf> {
-		pub fn new(owner: AccountId, annual_expense: BalanceOf) -> Self {
+		pub fn new(owner: AccountId, per_block_expense: BalanceOf) -> Self {
 			Club {
 				owner,
-				annual_expense,
+				per_block_expense,
 			}
 		}
 	}
@@ -104,6 +106,7 @@ pub mod pallet {
 		IsNotMember,
 		TooManyClubs,
 		NotOwner,
+		DurationOverflow
 	}
 
 	#[pallet::call]
@@ -121,7 +124,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Adds a member (account) to a club
+		/// Adds a member (account) to a club setting the expiration to the current block
 		#[pallet::weight(T::WeightInfo::add_member(*club_id))]
 		pub fn add_member(origin: OriginFor<T>, club_id: u32, member: T::AccountId) -> DispatchResult {
 			let caller = ensure_signed(origin)?;
@@ -142,7 +145,7 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Extend the membership by paying the annual expense
+		/// Extend the membership by paying the expense for the duration requested
 		#[pallet::weight(T::WeightInfo::extend_membership())]
 		pub fn extend_membership(origin: OriginFor<T>, club_id: u32, duration: T::BlockNumber) -> DispatchResult {
 			let caller = ensure_signed(origin)?;
@@ -156,7 +159,7 @@ pub mod pallet {
 
 			let club = Clubs::<T>::get(&club_id).unwrap();
 			let block_number_balance = T::BlockNumberToBalance::convert(duration);
-			let fee = club.annual_expense * block_number_balance;
+			let fee = club.per_block_expense.checked_mul(&block_number_balance).ok_or(Error::<T>::DurationOverflow)?;
 
 			// Transfer the fee amount to the club owner
         	T::Currency::transfer(&caller, &club.owner, fee, ExistenceRequirement::KeepAlive)?;

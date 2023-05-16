@@ -1,9 +1,8 @@
 use crate as pallet_clubs;
-use frame_support::{traits::{ConstU16, ConstU64}, parameter_types};
+use frame_support::{traits::ConstU16, parameter_types};
 use frame_system as system;
 use sp_core::H256;
 use sp_runtime::{
-	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup, ConstU32},
 };
 use system::EnsureRoot;
